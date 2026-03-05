@@ -7,8 +7,21 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool isDarkMode = false;
+
+  void toggleTheme() {
+    setState(() {
+      isDarkMode = !isDarkMode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,16 +29,26 @@ class MyApp extends StatelessWidget {
       title: 'Конвертер Валют',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.light),
         useMaterial3: true,
       ),
-      home: const MainScreen(),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+        useMaterial3: true,
+      ),
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      home: MainScreen(onThemeToggle: toggleTheme, isDarkMode: isDarkMode),
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final VoidCallback onThemeToggle;
+  final bool isDarkMode;
+
+  const MainScreen({super.key, required this.onThemeToggle, required this.isDarkMode});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -75,14 +98,11 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(child: _getScreen()),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Главная'),
           BottomNavigationBarItem(icon: Icon(Icons.swap_horiz), label: 'Обменники'),
@@ -112,6 +132,10 @@ class _MainScreenState extends State<MainScreen> {
             const SizedBox(width: 12),
             const Text('Главная', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             const Spacer(),
+            IconButton(
+              icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+              onPressed: widget.onThemeToggle,
+            ),
             TextButton(onPressed: _openEditScreen, child: const Text('Изменить')),
           ],
         ),
@@ -138,7 +162,7 @@ class _MainScreenState extends State<MainScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -164,7 +188,7 @@ class _MainScreenState extends State<MainScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -261,13 +285,10 @@ class _EditCurrenciesScreenState extends State<EditCurrenciesScreen> with Single
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('Изменение избранного', style: TextStyle(color: Colors.black)),
+        title: const Text('Изменение избранного'),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -287,16 +308,12 @@ class _EditCurrenciesScreenState extends State<EditCurrenciesScreen> with Single
             children: [
               TabBar(
                 controller: _tabController,
-                labelColor: Colors.blue,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.blue,
                 tabs: const [
                   Tab(text: 'Избранное'),
                   Tab(text: 'Все'),
                 ],
               ),
               Container(
-                color: Colors.white,
                 padding: const EdgeInsets.all(12),
                 child: TextField(
                   onChanged: (value) => setState(() => _searchQuery = value),
@@ -304,7 +321,6 @@ class _EditCurrenciesScreenState extends State<EditCurrenciesScreen> with Single
                     hintText: 'Поиск',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.grey[200],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -384,45 +400,37 @@ class _EditCurrenciesScreenState extends State<EditCurrenciesScreen> with Single
   }
 
   Widget _buildCurrencyItem(String flag, String code, String name, bool isFavorite, bool isCrypto) {
-    return Container(
-      color: Colors.white,
-      margin: const EdgeInsets.only(bottom: 1),
-      child: ListTile(
-        leading: Text(flag, style: const TextStyle(fontSize: 32)),
-        title: Text(name, style: const TextStyle(fontSize: 16)),
-        trailing: IconButton(
-          icon: Icon(
-            isFavorite ? Icons.star : Icons.star_border,
-            color: isFavorite ? Colors.blue : Colors.grey,
-          ),
-          onPressed: () => _toggleFavorite(code, isCrypto),
+    return ListTile(
+      leading: Text(flag, style: const TextStyle(fontSize: 32)),
+      title: Text(name, style: const TextStyle(fontSize: 16)),
+      trailing: IconButton(
+        icon: Icon(
+          isFavorite ? Icons.star : Icons.star_border,
+          color: isFavorite ? Colors.blue : Colors.grey,
         ),
+        onPressed: () => _toggleFavorite(code, isCrypto),
       ),
     );
   }
 
   Widget _buildCryptoItem(String symbol, String code, String name, bool isFavorite, bool isCrypto) {
-    return Container(
-      color: Colors.white,
-      margin: const EdgeInsets.only(bottom: 1),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: Colors.orange,
-            shape: BoxShape.circle,
-          ),
-          child: Center(child: Text(symbol, style: const TextStyle(fontSize: 20, color: Colors.white))),
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: const BoxDecoration(
+          color: Colors.orange,
+          shape: BoxShape.circle,
         ),
-        title: Text(name, style: const TextStyle(fontSize: 16)),
-        trailing: IconButton(
-          icon: Icon(
-            isFavorite ? Icons.star : Icons.star_border,
-            color: isFavorite ? Colors.blue : Colors.grey,
-          ),
-          onPressed: () => _toggleFavorite(code, isCrypto),
+        child: Center(child: Text(symbol, style: const TextStyle(fontSize: 20, color: Colors.white))),
+      ),
+      title: Text(name, style: const TextStyle(fontSize: 16)),
+      trailing: IconButton(
+        icon: Icon(
+          isFavorite ? Icons.star : Icons.star_border,
+          color: isFavorite ? Colors.blue : Colors.grey,
         ),
+        onPressed: () => _toggleFavorite(code, isCrypto),
       ),
     );
   }
