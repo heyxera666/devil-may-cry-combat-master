@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'translations.dart';
+import 'rate_management_screen.dart';
 
 class ExchangersScreen extends StatefulWidget {
   final String selectedLanguage;
+  final bool isLoggedIn;
+  final bool isLegalEntity;
+  final List<Map<String, String>> aiuBankRates;
+  final Function(List<Map<String, String>>) onRatesUpdate;
 
-  const ExchangersScreen({super.key, required this.selectedLanguage});
+  const ExchangersScreen({
+    super.key,
+    required this.selectedLanguage,
+    required this.isLoggedIn,
+    required this.isLegalEntity,
+    required this.aiuBankRates,
+    required this.onRatesUpdate,
+  });
 
   @override
   State<ExchangersScreen> createState() => _ExchangersScreenState();
@@ -14,6 +26,13 @@ class _ExchangersScreenState extends State<ExchangersScreen> {
   String _searchQuery = '';
 
   final List<Map<String, dynamic>> banks = [
+    {
+      'name': 'Aiu Bank',
+      'icon': '🏛️',
+      'color': Color(0xFF00C853),
+      'isOwn': true,
+      'rates': [],
+    },
     {
       'name': 'Halyk Bank',
       'icon': '🏦',
@@ -130,6 +149,9 @@ class _ExchangersScreenState extends State<ExchangersScreen> {
                 itemCount: filteredBanks.length,
                 itemBuilder: (context, index) {
                   final bank = filteredBanks[index];
+                  if (bank['isOwn'] == true) {
+                    bank['rates'] = widget.aiuBankRates;
+                  }
                   return _buildBankCard(bank);
                 },
               ),
@@ -230,6 +252,32 @@ class _ExchangersScreenState extends State<ExchangersScreen> {
               ),
             );
           }).toList(),
+          if (bank['isOwn'] == true && widget.isLoggedIn && widget.isLegalEntity)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: ElevatedButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RateManagementScreen(currentRates: widget.aiuBankRates),
+                    ),
+                  );
+                  if (result != null) {
+                    widget.onRatesUpdate(result);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Управление курсами', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
         ],
       ),
     );

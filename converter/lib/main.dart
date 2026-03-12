@@ -63,9 +63,17 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   String selectedCountry = 'KZT';
   String selectedLanguage = 'ru';
+  bool isLoggedIn = false;
+  bool isLegalEntity = false;
   Map<String, double> exchangeRates = {};
   List<String> favoriteCurrencies = ['USD', 'EUR', 'RUB'];
   List<String> favoriteCrypto = ['BTC'];
+  
+  List<Map<String, String>> aiuBankRates = [
+    {'flag': '🇺🇸', 'buy': '480', 'sell': '488'},
+    {'flag': '🇪🇺', 'buy': '558', 'sell': '568'},
+    {'flag': '🇷🇺', 'buy': '5,9', 'sell': '6,4'},
+  ];
 
   final allCurrencies = worldCurrencies;
   final allCrypto = worldCrypto;
@@ -108,7 +116,17 @@ class _MainScreenState extends State<MainScreen> {
       case 0:
         return _buildHomeScreen();
       case 1:
-        return ExchangersScreen(selectedLanguage: selectedLanguage);
+        return ExchangersScreen(
+          selectedLanguage: selectedLanguage,
+          isLoggedIn: isLoggedIn,
+          isLegalEntity: isLegalEntity,
+          aiuBankRates: aiuBankRates,
+          onRatesUpdate: (newRates) {
+            setState(() {
+              aiuBankRates = newRates;
+            });
+          },
+        );
       case 2:
         return const CryptoScreen();
       case 3:
@@ -117,6 +135,9 @@ class _MainScreenState extends State<MainScreen> {
         return OtherScreen(
           selectedCountry: selectedCountry,
           selectedLanguage: selectedLanguage,
+          isLoggedIn: isLoggedIn,
+          isLegalEntity: isLegalEntity,
+          aiuBankRates: aiuBankRates,
           onCountryChanged: (country) {
             setState(() {
               selectedCountry = country;
@@ -126,6 +147,23 @@ class _MainScreenState extends State<MainScreen> {
           onLanguageChanged: (language) {
             setState(() {
               selectedLanguage = language;
+            });
+          },
+          onLogin: (bool isLegal) {
+            setState(() {
+              isLoggedIn = true;
+              isLegalEntity = isLegal;
+            });
+          },
+          onLogout: () {
+            setState(() {
+              isLoggedIn = false;
+              isLegalEntity = false;
+            });
+          },
+          onRatesUpdate: (newRates) {
+            setState(() {
+              aiuBankRates = newRates;
             });
           },
         );
@@ -157,6 +195,49 @@ class _MainScreenState extends State<MainScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (isLoggedIn && isLegalEntity)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00C853), Color(0xFF00E676)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text('🏛️', style: TextStyle(fontSize: 32)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Aiu Bank',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      Text(
+                        'Юридическое лицо',
+                        style: TextStyle(fontSize: 14, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white),
+              ],
+            ),
+          ),
         Row(
           children: [
             GestureDetector(

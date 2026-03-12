@@ -1,19 +1,33 @@
 import 'package:flutter/material.dart';
 import 'settings_screen.dart';
 import 'translations.dart';
+import 'login_screen.dart';
+import 'my_exchanger_screen.dart';
 
 class OtherScreen extends StatelessWidget {
   final String selectedCountry;
   final String selectedLanguage;
+  final bool isLoggedIn;
+  final bool isLegalEntity;
   final Function(String) onCountryChanged;
   final Function(String) onLanguageChanged;
+  final Function(bool) onLogin;
+  final VoidCallback onLogout;
+  final List<Map<String, String>> aiuBankRates;
+  final Function(List<Map<String, String>>) onRatesUpdate;
 
   const OtherScreen({
     super.key,
     required this.selectedCountry,
     required this.selectedLanguage,
+    required this.isLoggedIn,
+    required this.isLegalEntity,
     required this.onCountryChanged,
     required this.onLanguageChanged,
+    required this.onLogin,
+    required this.onLogout,
+    required this.aiuBankRates,
+    required this.onRatesUpdate,
   });
 
   @override
@@ -42,6 +56,53 @@ class OtherScreen extends StatelessWidget {
               ),
             );
           }),
+          if (isLoggedIn && isLegalEntity)
+            _buildMenuItem(Icons.store, 'Мой обменник', () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MyExchangerScreen(
+                    aiuBankRates: aiuBankRates,
+                    onRatesUpdate: onRatesUpdate,
+                  ),
+                ),
+              );
+            }),
+          if (isLoggedIn && isLegalEntity)
+            _buildMenuItem(Icons.sell, 'Мои продажи', () {}),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ElevatedButton(
+              onPressed: () async {
+                if (isLoggedIn) {
+                  onLogout();
+                } else {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+                  if (result != null && result is bool) {
+                    onLogin(result);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isLoggedIn ? Colors.red : Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                isLoggedIn ? 'Выход' : 'Вход',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
         ],
       ),
     );
