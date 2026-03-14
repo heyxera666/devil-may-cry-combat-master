@@ -8,6 +8,7 @@ import 'currency_service.dart';
 import 'translations.dart';
 import 'exchangers_screen.dart';
 import 'trading_chart_screen.dart';
+import 'risk_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -77,6 +78,7 @@ class _MainScreenState extends State<MainScreen> {
   ];
   
   List<Map<String, dynamic>> rateHistory = [];
+  List<RiskAlert> riskAlerts = [];
 
   final allCurrencies = worldCurrencies;
   final allCrypto = worldCrypto;
@@ -92,6 +94,67 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       exchangeRates = rates;
     });
+  }
+
+  void _onRatesUpdate(List<Map<String, String>> newRates) {
+    final newAlerts = RiskService.analyzeRates(newRates);
+    setState(() {
+      aiuBankRates = newRates;
+      rateHistory.insert(0, {
+        'date': DateTime.now(),
+        'rates': List<Map<String, String>>.from(newRates),
+      });
+      riskAlerts.insertAll(0, newAlerts);
+    });
+    if (newAlerts.isNotEmpty) {
+      _showRiskBanner(newAlerts.first);
+    }
+  }
+
+  void _showRiskBanner(RiskAlert alert) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        content: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: alert.isWarning ? const Color(0xFFFF6B00) : Colors.green,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 12),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 32),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      alert.title,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      alert.description,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _openEditScreen() async {
@@ -124,15 +187,7 @@ class _MainScreenState extends State<MainScreen> {
           isLoggedIn: isLoggedIn,
           isLegalEntity: isLegalEntity,
           aiuBankRates: aiuBankRates,
-          onRatesUpdate: (newRates) {
-            setState(() {
-              aiuBankRates = newRates;
-              rateHistory.insert(0, {
-                'date': DateTime.now(),
-                'rates': List<Map<String, String>>.from(newRates),
-              });
-            });
-          },
+          onRatesUpdate: _onRatesUpdate,
         );
       case 2:
         return isLoggedIn && isLegalEntity
@@ -152,6 +207,7 @@ class _MainScreenState extends State<MainScreen> {
           isLegalEntity: isLegalEntity,
           aiuBankRates: aiuBankRates,
           rateHistory: rateHistory,
+          riskAlerts: riskAlerts,
           onCountryChanged: (country) {
             setState(() {
               selectedCountry = country;
@@ -175,15 +231,12 @@ class _MainScreenState extends State<MainScreen> {
               isLegalEntity = false;
             });
           },
-          onRatesUpdate: (newRates) {
+          onNavigateToChart: () {
             setState(() {
-              aiuBankRates = newRates;
-              rateHistory.insert(0, {
-                'date': DateTime.now(),
-                'rates': List<Map<String, String>>.from(newRates),
-              });
+              _selectedIndex = 2;
             });
           },
+          onRatesUpdate: _onRatesUpdate,
         );
       default:
         return Center(child: Text('Страница ${_selectedIndex + 1}'));
