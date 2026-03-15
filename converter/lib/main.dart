@@ -14,6 +14,29 @@ void main() {
   runApp(const MyApp());
 }
 
+class _FadeScalePageTransition extends PageTransitionsBuilder {
+  const _FadeScalePageTransition();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -41,6 +64,15 @@ class _MyAppState extends State<MyApp> {
         cardColor: Colors.white.withValues(alpha: 0.08),
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: _FadeScalePageTransition(),
+            TargetPlatform.iOS: _FadeScalePageTransition(),
+            TargetPlatform.windows: _FadeScalePageTransition(),
+            TargetPlatform.linux: _FadeScalePageTransition(),
+            TargetPlatform.macOS: _FadeScalePageTransition(),
+          },
+        ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
@@ -68,6 +100,15 @@ class _MyAppState extends State<MyApp> {
         cardColor: Colors.white.withValues(alpha: 0.08),
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: _FadeScalePageTransition(),
+            TargetPlatform.iOS: _FadeScalePageTransition(),
+            TargetPlatform.windows: _FadeScalePageTransition(),
+            TargetPlatform.linux: _FadeScalePageTransition(),
+            TargetPlatform.macOS: _FadeScalePageTransition(),
+          },
+        ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,

@@ -24,8 +24,11 @@ class ExchangersScreen extends StatefulWidget {
   State<ExchangersScreen> createState() => _ExchangersScreenState();
 }
 
+enum _FilterMode { none, bestBuy, bestSell }
+
 class _ExchangersScreenState extends State<ExchangersScreen> {
   String _searchQuery = '';
+  _FilterMode _filterMode = _FilterMode.none;
 
   final List<Map<String, dynamic>> banks = [
     {
@@ -109,11 +112,34 @@ class _ExchangersScreenState extends State<ExchangersScreen> {
     },
   ];
 
+  double _getUsdRate(Map<String, dynamic> bank, String type) {
+    final List rates = bank['isOwn'] == true
+        ? widget.aiuBankRates
+        : List.from(bank['rates'] ?? []);
+    if (rates.isEmpty) return 0;
+    try {
+      final usd = rates.firstWhere(
+        (r) => r is Map && r['flag'] == '🇺🇸',
+        orElse: () => rates[0],
+      );
+      if (usd is! Map) return 0;
+      return double.tryParse(usd[type]?.toString().replaceAll(',', '.') ?? '0') ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   List<Map<String, dynamic>> get filteredBanks {
-    if (_searchQuery.isEmpty) return banks;
-    return banks.where((bank) {
+    List<Map<String, dynamic>> result = banks.where((bank) {
       return bank['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
+
+    if (_filterMode == _FilterMode.bestBuy) {
+      result.sort((a, b) => _getUsdRate(a, 'buy').compareTo(_getUsdRate(b, 'buy')));
+    } else if (_filterMode == _FilterMode.bestSell) {
+      result.sort((a, b) => _getUsdRate(b, 'sell').compareTo(_getUsdRate(a, 'sell')));
+    }
+    return result;
   }
 
   @override
@@ -126,10 +152,18 @@ class _ExchangersScreenState extends State<ExchangersScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                tr('exchangers', widget.selectedLanguage),
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      tr('exchangers', widget.selectedLanguage),
+                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                  _buildFilterButton(),
+                ],
               ),
             ),
             Padding(
@@ -166,6 +200,187 @@ class _ExchangersScreenState extends State<ExchangersScreen> {
             ),
           ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterButton() {
+    final isActive = _filterMode != _FilterMode.none;
+    return GestureDetector(
+      onTap: () => _showFilterSheet(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: isActive
+              ? const LinearGradient(
+                  colors: [Color(0xFF42A5F5), Color(0xFF1565C0)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isActive ? null : Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? Colors.transparent : Colors.white.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isActive
+                  ? (_filterMode == _FilterMode.bestBuy ? 'Купить' : 'Продать')
+                  : 'Фильтр',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A2D42),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Сортировка',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 20),
+              _buildFilterOption(
+                icon: Icons.trending_down,
+                iconColor: const Color(0xFF42A5F5),
+                title: 'Выгодно купить',
+                subtitle: 'Банки с лучшим курсом покупки',
+                isSelected: _filterMode == _FilterMode.bestBuy,
+                onTap: () {
+                  setState(() => _filterMode = _FilterMode.bestBuy);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildFilterOption(
+                icon: Icons.trending_up,
+                iconColor: const Color(0xFF66BB6A),
+                title: 'Выгодно продать',
+                subtitle: 'Банки с лучшим курсом продажи',
+                isSelected: _filterMode == _FilterMode.bestSell,
+                onTap: () {
+                  setState(() => _filterMode = _FilterMode.bestSell);
+                  Navigator.pop(context);
+                },
+              ),
+              if (_filterMode != _FilterMode.none) ...[
+                const SizedBox(height: 12),
+                _buildFilterOption(
+                  icon: Icons.close,
+                  iconColor: Colors.white54,
+                  title: 'Сбросить фильтр',
+                  subtitle: 'Вернуть исходный порядок',
+                  isSelected: false,
+                  onTap: () {
+                    setState(() => _filterMode = _FilterMode.none);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterOption({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF42A5F5) : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: Color(0xFF42A5F5), size: 22),
+          ],
         ),
       ),
     );
