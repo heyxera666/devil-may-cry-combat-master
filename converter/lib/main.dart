@@ -37,21 +37,8 @@ class _FadeScalePageTransition extends PageTransitionsBuilder {
   }
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  bool isDarkMode = false;
-
-  void toggleTheme() {
-    setState(() {
-      isDarkMode = !isDarkMode;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,53 +81,13 @@ class _MyAppState extends State<MyApp> {
         ),
         iconTheme: const IconThemeData(color: Colors.white70),
       ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0D1B2A),
-        cardColor: Colors.white.withValues(alpha: 0.08),
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: _FadeScalePageTransition(),
-            TargetPlatform.iOS: _FadeScalePageTransition(),
-            TargetPlatform.windows: _FadeScalePageTransition(),
-            TargetPlatform.linux: _FadeScalePageTransition(),
-            TargetPlatform.macOS: _FadeScalePageTransition(),
-          },
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-          iconTheme: IconThemeData(color: Colors.white),
-        ),
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: Colors.black.withValues(alpha: 0.7),
-          selectedItemColor: const Color(0xFF42A5F5),
-          unselectedItemColor: Colors.white54,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-        ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white70),
-          titleLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white70),
-      ),
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: MainScreen(onThemeToggle: toggleTheme, isDarkMode: isDarkMode),
+      home: const MainScreen(),
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
-  final VoidCallback onThemeToggle;
-  final bool isDarkMode;
-
-  const MainScreen({super.key, required this.onThemeToggle, required this.isDarkMode});
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -444,10 +391,6 @@ class _MainScreenState extends State<MainScreen> {
             Text(tr('home', selectedLanguage), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
             const Spacer(),
 
-            IconButton(
-              icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-              onPressed: widget.onThemeToggle,
-            ),
             TextButton(onPressed: _openEditScreen, child: Text(tr('edit', selectedLanguage))),
           ],
         ),

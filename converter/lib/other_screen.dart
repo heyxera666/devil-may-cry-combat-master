@@ -9,8 +9,8 @@ import 'risk_service.dart';
 import 'competitor_rates_screen.dart';
 import 'stocks_screen.dart';
 import 'resources_screen.dart';
+import 'nearby_exchangers_screen.dart';
 import 'news_screen.dart';
-
 import 'app_background.dart';
 
 class OtherScreen extends StatelessWidget {
@@ -56,6 +56,10 @@ class OtherScreen extends StatelessWidget {
           Text(tr('other', selectedLanguage), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 24),
           _buildMenuItem(Icons.attach_money, tr('allRates', selectedLanguage), () {}),
+          if (!isLegalEntity)
+            _buildMenuItem(Icons.location_on, 'Ближайшие обменники', () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const NearbyExchangersScreen()));
+            }),
           if (isLoggedIn && isLegalEntity)
             _buildMenuItem(Icons.show_chart, tr('tradingChart', selectedLanguage), () {
               onNavigateToChart();
